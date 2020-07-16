@@ -1,6 +1,6 @@
 name: CreativeNbtControl
 main: net.craftersland.creativeNBT.CC
-version: 1.13
+version: 1.15
 author: CraftersLand
 website: www.craftersland.net
 load: STARTUP
