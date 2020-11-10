@@ -103,6 +103,7 @@ EnabledFor:
 - 'POTION'
 - 'SPLASH_POTION'
 - 'LINGERING_POTION'
+- 'TIPPED_ARROW'
 
 
 #Chat messages with color and format codes support.
