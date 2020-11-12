@@ -2,6 +2,8 @@ package net.craftersland.creativeNBT.events;
 
 import net.craftersland.creativeNBT.CC;
 
+import java.util.Map.Entry;
+
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
@@ -13,6 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCreativeEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -25,6 +28,17 @@ public class CreativeEvent implements Listener {
 
 	public CreativeEvent(CC cc) {
 		this.cc = cc;
+	}
+	
+	@EventHandler(ignoreCancelled = true)
+	public void InventoryDragEvent(InventoryDragEvent event) {
+		int newAmount = 0;
+		for (Entry<Integer, ItemStack> is : event.getNewItems().entrySet())
+			newAmount += is.getValue().getAmount();
+			
+		//CC.log.warning("DragEvent - Type: " + event.getType().toString() + " - New Size: " + event.getNewItems().size() + " - New Amount: " + newAmount + " - Old Amount: " + event.getOldCursor().getAmount() + " - Result: " + event.getResult().toString());
+		if(newAmount > event.getOldCursor().getAmount())
+			event.setCancelled(true);
 	}
 
 	@EventHandler(ignoreCancelled = true)
