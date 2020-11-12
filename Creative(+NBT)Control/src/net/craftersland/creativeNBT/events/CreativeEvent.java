@@ -32,13 +32,15 @@ public class CreativeEvent implements Listener {
 	
 	@EventHandler(ignoreCancelled = true)
 	public void InventoryDragEvent(InventoryDragEvent event) {
-		int newAmount = 0;
-		for (Entry<Integer, ItemStack> is : event.getNewItems().entrySet())
-			newAmount += is.getValue().getAmount();
-			
-		//CC.log.warning("DragEvent - Type: " + event.getType().toString() + " - New Size: " + event.getNewItems().size() + " - New Amount: " + newAmount + " - Old Amount: " + event.getOldCursor().getAmount() + " - Result: " + event.getResult().toString());
-		if(newAmount > event.getOldCursor().getAmount())
-			event.setCancelled(true);
+		if (event.getWhoClicked().getGameMode() == GameMode.CREATIVE) {
+			int newAmount = 0;
+			for (Entry<Integer, ItemStack> is : event.getNewItems().entrySet())
+				newAmount += is.getValue().getAmount();
+
+			//CC.log.warning("DragEvent - Type: " + event.getType().toString() + " - New Size: " + event.getNewItems().size() + " - New Amount: " + newAmount + " - Old Amount: " + event.getOldCursor().getAmount() + " - Result: " + event.getResult().toString());
+			if (newAmount > event.getOldCursor().getAmount())
+				event.setCancelled(true);
+		}
 	}
 
 	@EventHandler(ignoreCancelled = true)
