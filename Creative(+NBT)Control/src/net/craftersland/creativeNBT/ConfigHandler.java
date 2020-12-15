@@ -1,80 +1,71 @@
 package net.craftersland.creativeNBT;
 
-import java.io.File;
-import java.util.List;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.permissions.Permissible;
+
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Set;
 
 public class ConfigHandler {
-	
-	private CC eco;
-	
-	public ConfigHandler(CC eco) {
-		this.eco = eco;
-		loadConfig();
-	}
-	
-	public void loadConfig() {
-		File pluginFolder = new File("plugins" + System.getProperty("file.separator") + CC.pluginName);
-		if (pluginFolder.exists() == false) {
-    		pluginFolder.mkdir();
-    	}
-		File configFile = new File("plugins" + System.getProperty("file.separator") + CC.pluginName + System.getProperty("file.separator") + "config.yml");
-		if (configFile.exists() == false) {
-			CC.log.info("No config file found! Creating new one...");
-			eco.saveDefaultConfig();
-		}
-    	try {
-    		CC.log.info("Loading the config file...");
-    		eco.getConfig().load(configFile);
-    		CC.log.info("Loading complete!");
-    	} catch (Exception e) {
-    		CC.log.severe("Could not load the config file! You need to regenerate the config! Error: " + e.getMessage());
-			e.printStackTrace();
-    	}
-	}
-	
-	public String getString(String key) {
-		if (!eco.getConfig().contains(key)) {
-			eco.getLogger().severe("Could not locate " + key + " in the config.yml inside of the " + CC.pluginName + " folder! (Try generating a new one by deleting the current)");
-			return "errorCouldNotLocateInConfigYml:" + key;
-		} else {
-			return eco.getConfig().getString(key);
-		}
-	}
-	
-	public String getStringWithColor(String key) {
-		if (!eco.getConfig().contains(key)) {
-			eco.getLogger().severe("Could not locate " + key + " in the config.yml inside of the " + CC.pluginName + " folder! (Try generating a new one by deleting the current)");
-			return "errorCouldNotLocateInConfigYml:" + key;
-		} else {
-			return eco.getConfig().getString(key).replaceAll("&", "§");
-		}
-	}
-	
-	public List<String> getStringList(String key) {
-		if (!eco.getConfig().contains(key)) {
-			eco.getLogger().severe("Could not locate " + key + " in the config.yml inside of the " + CC.pluginName + " folder! (Try generating a new one by deleting the current)");
-			return null;
-		} else {
-			return eco.getConfig().getStringList(key);
-		}
-	}
-	
-	public Integer getInteger(String key) {
-		if (!eco.getConfig().contains(key)) {
-			eco.getLogger().severe("Could not locate " + key + " in the config.yml inside of the " + CC.pluginName + " folder! (Try generating a new one by deleting the current)");
-			return null;
-		} else {
-			return eco.getConfig().getInt(key);
-		}
-	}
-	
-	public Boolean getBoolean(String key) {
-		if (!eco.getConfig().contains(key)) {
-			eco.getLogger().severe("Could not locate " + key + " in the config.yml inside of the " + CC.pluginName + " folder! (Try generating a new one by deleting the current)");
-			return null;
-		} else {
-			return eco.getConfig().getBoolean(key);
-		}
-	}
+
+    private final CC eco;
+    private final Map<CreativeCheck, Boolean> enabledChecks = new EnumMap<>(CreativeCheck.class);
+    private final Set<Material> enabledMaterialChecks = EnumSet.noneOf(Material.class);
+
+    public ConfigHandler(CC eco) {
+        this.eco = eco;
+        loadConfig();
+    }
+
+    public void loadConfig() {
+        eco.saveDefaultConfig();
+
+        CC.LOGGER.info("Loading the config file...");
+        FileConfiguration config = eco.getConfig();
+
+        for (CreativeCheck check : CreativeCheck.values()) {
+            enabledChecks.put(check, config.getBoolean(check.getConfigPath(), check.getDefaultValue()));
+        }
+
+        enabledMaterialChecks.clear();
+        for (String rawMaterial : config.getStringList("EnabledFor")) {
+            try {
+                Material material = Material.valueOf(rawMaterial);
+                enabledMaterialChecks.add(material);
+            } catch (IllegalArgumentException e) {
+                CC.LOGGER.severe(rawMaterial + " is not a valid Material!");
+            }
+        }
+
+        CC.LOGGER.info("Loading complete!");
+    }
+
+    public boolean isCheckEnabled(ItemStack itemStack, Permissible permissible) {
+        return enabledMaterialChecks.contains(itemStack.getType())
+                && !permissible.hasPermission("CNC.bypass");
+    }
+
+    public boolean isCheckEnabled(CreativeCheck creativeCheck, Permissible permissible) {
+        return enabledChecks.getOrDefault(creativeCheck, creativeCheck.getDefaultValue())
+                && !permissible.hasPermission(creativeCheck.getBypassPermission());
+    }
+
+    public String getString(String key) {
+        String string = eco.getConfig().getString(key);
+        if (string == null) {
+            eco.getLogger().severe(String.format("Could not locate %s in the config.yml inside of the plugin folder! (Try generating a new one by deleting the current)", key));
+            return "errorCouldNotLocateInConfigYml:" + key;
+        }
+        return string;
+    }
+
+    public String getStringWithColor(String key) {
+        return ChatColor.translateAlternateColorCodes('&', getString(key));
+    }
 
 }

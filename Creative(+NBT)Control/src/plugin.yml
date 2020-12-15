@@ -13,9 +13,13 @@ permissions:
     CNC.admin:
         description: Admin commands access
         default: op
-    CNC.bypass:
+    CNC.bypass.*:
         description: Unlock access to creative NBT copy feature.
         default: op
-    CNC.bypass.enchants:
-        description: Unlock access to copy enchants.
-        default: op
+        children:
+            CNC.bypass: true
+            CNC.bypass.armorstands: true
+            CNC.bypass.clone: true
+            CNC.bypass.enchants: true
+            CNC.bypass.itemframes: true
+            CNC.bypass.spawneggs: true

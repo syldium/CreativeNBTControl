@@ -5,14 +5,12 @@ import java.util.logging.Logger;
 import net.craftersland.creativeNBT.events.CreativeEvent;
 
 import org.bukkit.Bukkit;
-import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class CC extends JavaPlugin {
 	
-	public static Logger log;
-	public static String pluginName = "CreativeNbtControl";
+	public static Logger LOGGER;
 	public boolean is19Server = true;
 	public boolean is18Server = true;
 	public boolean is13Server = true;
@@ -22,7 +20,7 @@ public class CC extends JavaPlugin {
 	
 	@Override
     public void onEnable() {
-		log = getLogger();
+		LOGGER = getLogger();
 		getMcVersion();
 		cH = new ConfigHandler(this);
 		sH = new SoundHandler(this);
@@ -31,14 +29,7 @@ public class CC extends JavaPlugin {
     	pm.registerEvents(new CreativeEvent(this), this);
     	CommandHandler cH = new CommandHandler(this);
     	getCommand("cnc").setExecutor(cH);
-    	log.info(pluginName + " loaded successfully!");
-	}
-	
-	@Override
-    public void onDisable() {
-		Bukkit.getScheduler().cancelTasks(this);
-		HandlerList.unregisterAll(this);
-		log.info(pluginName + " is disabled!");
+    	LOGGER.info("CreativeNbtControl loaded successfully!");
 	}
 	
 	private void getMcVersion() {

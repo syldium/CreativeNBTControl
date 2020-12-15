@@ -2,122 +2,78 @@ package net.craftersland.creativeNBT.events;
 
 import net.craftersland.creativeNBT.CC;
 
-import java.util.Map.Entry;
-
+import net.craftersland.creativeNBT.CreativeCheck;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
+import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCreativeEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerArmorStandManipulateEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SpawnEggMeta;
 
+import java.util.Map;
+
+import static net.craftersland.creativeNBT.BukkitVersion.*;
+
 public class CreativeEvent implements Listener {
 
-	private CC cc;
+	private final CC cc;
 
 	public CreativeEvent(CC cc) {
 		this.cc = cc;
 	}
-	
+
 	@EventHandler(ignoreCancelled = true)
 	public void InventoryDragEvent(InventoryDragEvent event) {
-		if (event.getWhoClicked().getGameMode() == GameMode.CREATIVE) {
-			int newAmount = 0;
-			for (Entry<Integer, ItemStack> is : event.getNewItems().entrySet())
-				newAmount += is.getValue().getAmount();
+		if (event.getWhoClicked().getGameMode() != GameMode.CREATIVE
+				|| !cc.getConfigHandler().isCheckEnabled(CreativeCheck.CLONE, event.getWhoClicked())) {
+			return;
+		}
 
-			//CC.log.warning("DragEvent - Type: " + event.getType().toString() + " - New Size: " + event.getNewItems().size() + " - New Amount: " + newAmount + " - Old Amount: " + event.getOldCursor().getAmount() + " - Result: " + event.getResult().toString());
-			if (newAmount > event.getOldCursor().getAmount())
-				event.setCancelled(true);
+		int newAmount = 0;
+		for (ItemStack itemStack : event.getNewItems().values())
+			newAmount += itemStack.getAmount();
+
+		//CC.LOGGER.warning("DragEvent - Type: " + event.getType().toString() + " - New Size: " + event.getNewItems().size() + " - New Amount: " + newAmount + " - Old Amount: " + event.getOldCursor().getAmount() + " - Result: " + event.getResult().toString());
+		if (newAmount > event.getOldCursor().getAmount()) {
+			event.setCancelled(true);
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true)
 	public void inventoryClickEvent(final InventoryClickEvent event) {
-		//Triggers on other inventory click
-		//CC.log.warning("Debug 1 - " + event.getClick().isCreativeAction() + " - " + event.getClick().isRightClick() + " - " + event.getClick().isLeftClick() + " - " + event.getClick() +  " - " + event.getClick().isKeyboardClick());
-		if ((event.getClick() == ClickType.MIDDLE && event.getClick().isCreativeAction() == true) || event.getClick() == ClickType.UNKNOWN) {
-			if (event.getInventory().getType() != InventoryType.PLAYER) {
-				Player p = (Player) event.getWhoClicked();
-				if (p.getGameMode() == GameMode.CREATIVE) {
-					if (p.hasPermission("CNC.bypass") == false && event.getCurrentItem() != null) {
-						ItemStack cursorItem = event.getCurrentItem();
-						if (cursorItem.getType() != Material.AIR) {
-							int amount = cursorItem.getAmount();
-							short data = cursorItem.getData().getData();
-							boolean checkEnchants = true;
+		//CC.LOGGER.warning("Debug 1 - " + event.getClick().isCreativeAction() + " - " + event.getClick().isRightClick() + " - " + event.getClick().isLeftClick() + " - " + event.getClick() +  " - " + event.getClick().isKeyboardClick() +  " - "  + event.getAction());
+		if (event.getClick().isCreativeAction() || event.getClick() == ClickType.UNKNOWN
+				|| event.getAction() == InventoryAction.CLONE_STACK && cc.getConfigHandler().isCheckEnabled(CreativeCheck.CLONE, event.getWhoClicked())) {
+			ItemStack cursorItem = event.getCurrentItem();
 
-							if (cursorItem.getItemMeta() instanceof SpawnEggMeta) {
-								event.setCursor(new ItemStack(cursorItem.getType(), amount, data));
-								checkEnchants = false;
-							} else {
-								for (String s : cc.getConfigHandler().getStringList("EnabledFor")) {
-									try {
-										if (cursorItem.getType() == Material.valueOf(s)) {
-											event.setCursor(new ItemStack(Material.valueOf(s), amount, data));
-											checkEnchants = false;
-											break;
-										}
-									} catch (Exception e) {
-										CC.log.warning("Error on material: " + s + " Error: " + e.getMessage());
-									}
-								}
-								if (cursorItem.getEnchantments().isEmpty() == false && p.hasPermission("CNC.bypass.enchants") == false && checkEnchants == true) {
-									event.setCursor(new ItemStack(cursorItem.getType(), amount, data));
-								}
-							}
-						}
-					}
-				}
+			if (hasIllegalNbt(event.getWhoClicked(), cursorItem)) {
+				// noinspection deprecation
+				event.setCursor(sanitizeItemStack(cursorItem));
 			}
 		}
 	}
 
 	@EventHandler(ignoreCancelled = true)
-	public void inventoryCreativeEvent(final InventoryCreativeEvent event) {
-		//Triggers on player inventory click
-		//CC.log.warning("Debug 2 - " + event.getClick().isCreativeAction() + " - " + event.getClick().isRightClick() + " - " + event.getClick().isLeftClick() + " - " + event.getClick() + " - " + event.getSlotType() + " - " + event.getRawSlot() + " - " + event.getClickedInventory().getType().toString());
-		if (event.getClick() == ClickType.CREATIVE) {
-			Player p = (Player) event.getWhoClicked();
-			if (p.hasPermission("CNC.bypass") == false && event.getCursor() != null) {
-				ItemStack cursorItem = event.getCursor();
-				if (cursorItem.getType() != Material.AIR) {
-					int amount = cursorItem.getAmount();
-					short data = cursorItem.getData().getData();
-					boolean checkEnchants = true;
-
-					if (cursorItem.getItemMeta() instanceof SpawnEggMeta) {
-						event.setCursor(new ItemStack(cursorItem.getType(), amount, data));
-						checkEnchants = false;
-					} else {
-						for (String s : cc.getConfigHandler().getStringList("EnabledFor")) {
-							try {
-								if (cursorItem.getType() == Material.valueOf(s)) {
-									event.setCursor(new ItemStack(Material.valueOf(s), amount, data));
-									checkEnchants = false;
-									break;
-								}
-							} catch (Exception e) {
-								CC.log.warning("Error on material: " + s + " Error: " + e.getMessage());
-							}
-						}
-						if (cursorItem.getEnchantments().isEmpty() == false && p.hasPermission("CNC.bypass.enchants") == false && checkEnchants == true) {
-							event.setCursor(new ItemStack(cursorItem.getType(), amount, data));
-						}
-					}
-				}
-			}
+	public void itemDropEvent(PlayerDropItemEvent event) {
+		Item item = event.getItemDrop();
+		ItemStack itemStack = item.getItemStack();
+		if (hasIllegalNbt(event.getPlayer(), itemStack)) {
+			item.setItemStack(sanitizeItemStack(itemStack));
 		}
 	}
 
@@ -126,16 +82,51 @@ public class CreativeEvent implements Listener {
 		final Player p = event.getPlayer();
 		Entity entity = event.getRightClicked();
 
-		ItemStack item = p.getInventory().getItemInMainHand();
+		ItemStack item = getItemInHand(event);
 
 		if (item == null || item.getType() == Material.AIR)
 			return;
 
-		if (entity.getType().equals(EntityType.ITEM_FRAME)) {
-			if (p.hasPermission("CNC.bypass") == false && p.getGameMode() == GameMode.CREATIVE) {
-				event.setCancelled(true);
-				p.sendMessage(cc.getConfigHandler().getStringWithColor("ChatMessages.OpenSurvivalFrame"));
+		if (entity instanceof ItemFrame) {
+			ItemFrame itemFrame = (ItemFrame) entity;
+			if (itemFrame.getItem().getType() != Material.AIR) {
+				return;
 			}
+
+			if (p.getGameMode() == GameMode.CREATIVE && cc.getConfigHandler().isCheckEnabled(CreativeCheck.ITEM_FRAMES, p)) {
+				event.setCancelled(true);
+				itemFrame.setItem(item);
+				item.setAmount(item.getAmount() - 1);
+			}
+		}
+	}
+
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	public void onPlayerInteractEntity(EntityDamageByEntityEvent event) {
+		if (!(event.getDamager() instanceof Player)) {
+			return;
+		}
+
+		Player player = (Player) event.getDamager();
+
+		if (event.getEntity() instanceof ItemFrame) {
+			if (player.getGameMode() != GameMode.CREATIVE
+					|| !cc.getConfigHandler().isCheckEnabled(CreativeCheck.ITEM_FRAMES, player)) {
+				return;
+			}
+
+			ItemFrame itemFrame = (ItemFrame) event.getEntity();
+			ItemStack itemStack = itemFrame.getItem();
+			if (isFixed(itemFrame) || itemStack.getType() == Material.AIR) {
+				return;
+			}
+
+			if (!doEntityDrops(itemFrame.getWorld())) {
+				return;
+			}
+
+			itemFrame.getWorld().dropItemNaturally(itemFrame.getLocation(), itemStack);
+			itemFrame.setItem(null);
 		}
 	}
 
@@ -150,11 +141,57 @@ public class CreativeEvent implements Listener {
 			if (item.getType() == Material.AIR)
 				return;
 
-			if (p.hasPermission("CNC.bypass") == false && p.getGameMode() == GameMode.CREATIVE) {
+			if (cc.getConfigHandler().isCheckEnabled(CreativeCheck.ARMOR_STANDS, p) && p.getGameMode() == GameMode.CREATIVE) {
 				event.setCancelled(true);
-				p.sendMessage(cc.getConfigHandler().getStringWithColor("ChatMessages.OpenSurvivalArmor"));
+				event.getRightClicked().setItem(event.getSlot(), item);
+				item.setAmount(item.getAmount() - 1);
 			}
 		}
+	}
+
+	/**
+	 * Tests according to the plugin configuration if the {@link ItemStack} seems suspicious.
+	 *
+	 * @param player The player who owns the item, to check some permissions.
+	 * @param item The item to test.
+	 * @return If the {@link ItemStack} should be recreated without metadata.
+	 */
+	private boolean hasIllegalNbt(HumanEntity player, ItemStack item) {
+		if (player.getGameMode() != GameMode.CREATIVE) {
+			return false;
+		}
+
+		if (item != null && item.getType() != Material.AIR) {
+			if (item.getItemMeta() instanceof SpawnEggMeta) {
+				return cc.getConfigHandler().isCheckEnabled(CreativeCheck.SPAWN_EGGS, player);
+			}
+			if (cc.getConfigHandler().isCheckEnabled(item, player)) {
+				return true;
+			}
+
+			if (cc.getConfigHandler().isCheckEnabled(CreativeCheck.ENCHANTS, player)) {
+				for (Map.Entry<Enchantment, Integer> enchantment : item.getEnchantments().entrySet()) {
+					if (enchantment.getKey().getMaxLevel() < enchantment.getValue()) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Removes each metadata from an {@link ItemStack}.
+	 *
+	 * @param original The original {@link ItemStack}.
+	 * @return A new {@link ItemStack}.
+	 */
+	private ItemStack sanitizeItemStack(ItemStack original) {
+		if (cc.is13Server) {
+			return new ItemStack(original.getType(), original.getAmount());
+		}
+		// noinspection deprecation
+		return new ItemStack(original.getType(), original.getAmount(), original.getDurability());
 	}
 
 }

@@ -1,6 +1,14 @@
 # default config.yml for CreativeNbtControl
 # config version 1.13
- 
+
+# Enabled checks
+# Players with permission "CNC.bypass.[checkname]" are exempt from these checks.
+Checks:
+    armorstands: true # Removes the item from the player's inventory rather than copying it (like in survival mode)
+    clone: false # When a set of any item is duplicated with the middle click
+    enchants: true # Prevents non applicable enchantments on items
+    itemframes: true # Removes the item from the player's inventory rather than copying it. (like in survival mode)
+    spawneggs: true # Prevents any data on spawn eggs
 
 #The plugin will check for the following items.
 # Material names: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html
@@ -112,5 +120,3 @@ ChatMessages:
     NoPermission: '&4[System] &cYou don''t have permission!'
     CmdHelp: '&4[System] &cAvailable commands:&6 /cnc reload'
     CmdReload: '&2[System] &aConfig reload complete!'
-    OpenSurvivalFrame: '&6[System] &eYou must be in survival mode to place an item in a frame!'
-    OpenSurvivalArmor: '&6[System] &eYou must be in survival mode to place items in an armor stand!'
