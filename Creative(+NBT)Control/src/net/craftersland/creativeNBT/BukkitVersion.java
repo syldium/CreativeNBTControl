@@ -3,7 +3,10 @@ package net.craftersland.creativeNBT;
 import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.entity.ItemFrame;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 public class BukkitVersion {
@@ -64,5 +67,32 @@ public class BukkitVersion {
         }
         // noinspection deprecation
         return event.getPlayer().getItemInHand();
+    }
+
+    public static void setItem(LivingEntity entity, EquipmentSlot slot, ItemStack itemStack) {
+        EntityEquipment equipment = entity.getEquipment();
+        if (equipment == null) {
+            return;
+        }
+
+        switch (slot) {
+            case HAND:
+                equipment.setItemInMainHand(itemStack);
+                return;
+            case OFF_HAND:
+                equipment.setItemInOffHand(itemStack);
+                return;
+            case FEET:
+                equipment.setBoots(itemStack);
+                return;
+            case LEGS:
+                equipment.setLeggings(itemStack);
+                return;
+            case CHEST:
+                equipment.setChestplate(itemStack);
+                return;
+            case HEAD:
+                equipment.setHelmet(itemStack);
+        }
     }
 }

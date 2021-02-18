@@ -143,7 +143,7 @@ public class CreativeEvent implements Listener {
 
 			if (cc.getConfigHandler().isCheckEnabled(CreativeCheck.ARMOR_STANDS, p) && p.getGameMode() == GameMode.CREATIVE) {
 				event.setCancelled(true);
-				event.getRightClicked().setItem(event.getSlot(), item);
+				setItem(event.getRightClicked(), event.getSlot(), item);
 				item.setAmount(item.getAmount() - 1);
 			}
 		}
