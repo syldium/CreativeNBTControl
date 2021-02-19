@@ -57,9 +57,13 @@ public class CreativeEvent implements Listener {
 	@EventHandler(ignoreCancelled = true)
 	public void inventoryClickEvent(final InventoryClickEvent event) {
 		//CC.LOGGER.warning("Debug 1 - " + event.getClick().isCreativeAction() + " - " + event.getClick().isRightClick() + " - " + event.getClick().isLeftClick() + " - " + event.getClick() +  " - " + event.getClick().isKeyboardClick() +  " - "  + event.getAction());
-		if (event.getClick().isCreativeAction() || event.getClick() == ClickType.UNKNOWN
+		ClickType click = event.getClick();
+		if (click.isCreativeAction() || click == ClickType.UNKNOWN
 				|| event.getAction() == InventoryAction.CLONE_STACK && cc.getConfigHandler().isCheckEnabled(CreativeCheck.CLONE, event.getWhoClicked())) {
-			ItemStack cursorItem = event.getCurrentItem();
+			ItemStack cursorItem = event.getCursor();
+			if (cursorItem == null || cursorItem.getType() == Material.AIR) {
+				return;
+			}
 
 			if (hasIllegalNbt(event.getWhoClicked(), cursorItem)) {
 				// noinspection deprecation
